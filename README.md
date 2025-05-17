@@ -2,7 +2,7 @@
 
 A quick go application for taking a screenshot of a webpage and writing
 a list of words that appear within the rendered text using playwright-go. 
-I use this for scraping visible page data in other projects quickly.
+I use this for scraping visible page data for large sets of urls.
 
 ## install
 
@@ -33,4 +33,6 @@ Usage of screenshawty:
         display help message
   -timeout float
         timeout in ms (default 10000)
+  -wait-time int
+        wait time before taking screenshot (default 2)
 ```
