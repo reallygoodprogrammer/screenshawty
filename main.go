@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -15,10 +16,12 @@ func main() {
 	var dir string
 	var help bool
 	var timeout float64
+	var waitTime int
 
 	flag.StringVar(&dir, "dir", "shawty_output", "directory to write data to")
 	flag.IntVar(&con, "concurrency", 5, "concurrency for requests")
 	flag.Float64Var(&timeout, "timeout", 10000, "timeout in ms")
+	flag.IntVar(&waitTime, "wait-time", 2, "wait time before taking screenshot")
 	flag.BoolVar(&help, "help", false, "display help message")
 	flag.Parse()
 
@@ -49,6 +52,26 @@ func main() {
 		fmt.Fprintf(os.Stderr, "could not start browser: %v\n", err)
 		return
 	}
+
+	context, err := browser.NewContext(playwright.BrowserNewContextOptions {
+		Viewport: &playwright.Size {
+			Width:  1280,
+			Height: 720,
+		},
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not create context: %v\n", err)
+		return
+	}
+
+	headers := map[string]string{
+		"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+		"Accept-Language": "en-US,en;q=0.9",
+		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+	}
+	context.SetExtraHTTPHeaders(headers)
+
+	wait := time.Duration(waitTime) * time.Second
 	
 	urls := make(chan string)
 	output := make(chan string)
@@ -59,7 +82,7 @@ func main() {
 		go func() {
 			defer inGrp.Done()
 			for url := range urls {
-				page, err := browser.NewPage()
+				page, err := context.NewPage()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error creating page: %v\n", err)
 					continue
@@ -71,10 +94,10 @@ func main() {
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error going to url: %v\n", err)
 				} else {
+					time.Sleep(wait)
 					fileName := strings.ReplaceAll(url, "/", "_")
 					_, err = page.Screenshot(playwright.PageScreenshotOptions{
 						Path: playwright.String(dir+"/"+fileName+"_screenshot.png"),
-						FullPage: playwright.Bool(true),
 					})
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "error taking screenshot: %v\n", err)
