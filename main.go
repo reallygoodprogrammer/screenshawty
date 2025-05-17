@@ -17,11 +17,13 @@ func main() {
 	var help bool
 	var timeout float64
 	var waitTime int
+	var browser bool
 
 	flag.StringVar(&dir, "dir", "shawty_output", "directory to write data to")
 	flag.IntVar(&con, "concurrency", 5, "concurrency for requests")
 	flag.Float64Var(&timeout, "timeout", 10000, "timeout in ms")
 	flag.IntVar(&waitTime, "wait-time", 2, "wait time before taking screenshot")
+	flag.BoolVar(&browser, "browser", false, "don't run in headless mode (open browser)")
 	flag.BoolVar(&help, "help", false, "display help message")
 	flag.Parse()
 
@@ -45,7 +47,7 @@ func main() {
 	defer pw.Stop()
 
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
+		Headless: playwright.Bool(!browser),
 		Args:     []string{"--no-sandbox"},
 	})
 	if err != nil {
@@ -53,8 +55,8 @@ func main() {
 		return
 	}
 
-	context, err := browser.NewContext(playwright.BrowserNewContextOptions {
-		Viewport: &playwright.Size {
+	context, err := browser.NewContext(playwright.BrowserNewContextOptions{
+		Viewport: &playwright.Size{
 			Width:  1280,
 			Height: 720,
 		},
@@ -72,7 +74,7 @@ func main() {
 	context.SetExtraHTTPHeaders(headers)
 
 	wait := time.Duration(waitTime) * time.Second
-	
+
 	urls := make(chan string)
 	output := make(chan string)
 
@@ -97,12 +99,12 @@ func main() {
 					time.Sleep(wait)
 					fileName := strings.ReplaceAll(url, "/", "_")
 					_, err = page.Screenshot(playwright.PageScreenshotOptions{
-						Path: playwright.String(dir+"/"+fileName+"_screenshot.png"),
+						Path: playwright.String(dir + "/" + fileName + "_screenshot.png"),
 					})
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "error taking screenshot: %v\n", err)
 					} else {
-						output <- "[+] screenshot successful: "+fileName+"_screenshot.png"
+						output <- "[+] screenshot successful: " + fileName + "_screenshot.png"
 					}
 
 					result, err := page.Evaluate("(document.body.innerText)")
@@ -111,18 +113,18 @@ func main() {
 					} else {
 						text := result.(string)
 						words := strings.Fields(text)
-						file, err := os.Create(dir+"/"+fileName+"_words.txt")
+						file, err := os.Create(dir + "/" + fileName + "_words.txt")
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "error creating file: %v\n", err)
-						} else { 
+						} else {
 							for _, w := range words {
-								_, err := file.WriteString(w+"\n")
+								_, err := file.WriteString(w + "\n")
 								if err != nil {
 									fmt.Fprintf(os.Stderr, "error writing to file : %v\n", err)
 									return
 								}
 							}
-							output <- "[+] word file saved: "+fileName+"_words.txt"
+							output <- "[+] word file saved: " + fileName + "_words.txt"
 						}
 					}
 				}
