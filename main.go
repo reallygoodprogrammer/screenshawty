@@ -17,13 +17,13 @@ func main() {
 	var help bool
 	var timeout float64
 	var waitTime int
-	var browser bool
+	var openBrowser bool
 
 	flag.StringVar(&dir, "dir", "shawty_output", "directory to write data to")
 	flag.IntVar(&con, "concurrency", 5, "concurrency for requests")
 	flag.Float64Var(&timeout, "timeout", 10000, "timeout in ms")
 	flag.IntVar(&waitTime, "wait-time", 2, "wait time before taking screenshot")
-	flag.BoolVar(&browser, "browser", false, "don't run in headless mode (open browser)")
+	flag.BoolVar(&openBrowser, "browser", false, "don't run in headless mode (open browser)")
 	flag.BoolVar(&help, "help", false, "display help message")
 	flag.Parse()
 
@@ -47,7 +47,7 @@ func main() {
 	defer pw.Stop()
 
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(!browser),
+		Headless: playwright.Bool(!openBrowser),
 		Args:     []string{"--no-sandbox"},
 	})
 	if err != nil {
